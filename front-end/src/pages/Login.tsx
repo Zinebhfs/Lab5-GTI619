@@ -40,9 +40,13 @@ const Login = () => {
 
             {/* Bouton Se connecter */}
             <div className="d-grid">
-              <button type="submit" className="btn btn-primary">
-                Se connecter
-              </button>
+            <button
+              type="submit"
+              className="btn"
+              style={{ backgroundColor: "#6a0dad", color: "white", border: "none" }}
+            >
+              Se connecter
+            </button>
             </div>
           </form>
 
@@ -51,7 +55,7 @@ const Login = () => {
           {/* Lien pour s'inscrire */}
           <p className="text-center">
             Pas encore de compte ?{" "}
-            <a href="#" className="text-decoration-none text-primary">
+            <a href="/signup" className="text-decoration-none text-primary">
               Inscrivez-vous ici
             </a>
           </p>
