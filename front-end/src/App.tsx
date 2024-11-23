@@ -5,6 +5,7 @@ import ResidentialDashboard from "./pages/ResidentialDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import BusinessDashboard from "./pages/BusinessDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Signup from "./pages/Signup";
 
 const App = () => {
   const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
@@ -13,6 +14,7 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/" element={<Login setRole={setCurrentUserRole} />} />
+        <Route path="/signup" element={<Signup />} />
         <Route
           path="/residential-dashboard"
           element={

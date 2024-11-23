@@ -79,11 +79,23 @@ const Login: React.FC<LoginProps> = ({ setRole }) => {
             </div>
             {error && <div className="text-danger">{error}</div>}
             <div className="d-grid">
-              <button type="submit" className="btn btn-primary">
+              <button
+                type="submit"
+                className="btn"
+                style={{ backgroundColor: "#6a0dad", color: "white", border: "none" }}
+                >
                 Se connecter
               </button>
             </div>
           </form>
+          <hr className="my-4" />
+          {/* Lien pour s'inscrire */}
+          <p className="text-center">
+            Pas encore de compte ?{" "}
+            <a href="/signup" className="text-decoration-none text-primary">
+              Inscrivez-vous ici
+            </a>
+          </p>
         </div>
       </div>
     </div>
