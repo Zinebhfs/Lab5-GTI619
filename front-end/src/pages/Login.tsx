@@ -1,16 +1,54 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { login } from "../services/authService";
 
+type LoginProps = {
+  setRole: (role: string) => void;
+};
 
-const Login = () => {
+const Login: React.FC<LoginProps> = ({ setRole }) => {
+  const [username, setUsername] = useState(""); // État pour le nom d'utilisateur
+  const [password, setPassword] = useState(""); // État pour le mot de passe
+  const [error, setError] = useState<string | null>(null); // État pour les erreurs
+
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      const user = await login(username, password); // Appelle la fonction `login`
+      console.log("Utilisateur connecté :", user);
+
+      if (user) {
+        localStorage.setItem("userRole", user.role); // Stocke le rôle dans localStorage
+        setRole(user.role); // Met à jour le rôle dans l'état parent
+        console.log("Rôle défini :", user.role);
+
+        // Navigation avec React Router selon le rôle
+        if (user.role === "business") {
+          navigate("/business-dashboard");
+        } else if (user.role === "residential") {
+          navigate("/residential-dashboard");
+        } else if (user.role === "admin") {
+          navigate("/admin-dashboard");
+        }
+      } else {
+        setError("Nom d'utilisateur ou mot de passe incorrect.");
+      }
+    } catch (error) {
+      console.error("Erreur lors de la connexion :", error);
+      setError("Une erreur s'est produite. Veuillez réessayer.");
+    }
+  };
+
   return (
-    <div
-      className="d-flex align-items-center justify-content-center vh-100 bg-light"
-      style={{ padding: "20px" }}
-    >
+    <div className="d-flex align-items-center justify-content-center vh-100 bg-light">
       <div className="card shadow-lg" style={{ maxWidth: "400px", width: "100%" }}>
         <div className="card-body">
           <h3 className="text-center mb-4">Connexion</h3>
-          <form>
-            {/* Nom d'utilisateur */}
+          <form onSubmit={handleSubmit}>
             <div className="mb-3">
               <label htmlFor="username" className="form-label">
                 Nom d'utilisateur
@@ -20,11 +58,11 @@ const Login = () => {
                 id="username"
                 className="form-control"
                 placeholder="Entrez votre nom d'utilisateur"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>
-
-            {/* Mot de passe */}
             <div className="mb-3">
               <label htmlFor="password" className="form-label">
                 Mot de passe
@@ -34,31 +72,18 @@ const Login = () => {
                 id="password"
                 className="form-control"
                 placeholder="Entrez votre mot de passe"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
               />
             </div>
-
-            {/* Bouton Se connecter */}
+            {error && <div className="text-danger">{error}</div>}
             <div className="d-grid">
-            <button
-              type="submit"
-              className="btn"
-              style={{ backgroundColor: "#6a0dad", color: "white", border: "none" }}
-            >
-              Se connecter
-            </button>
+              <button type="submit" className="btn btn-primary">
+                Se connecter
+              </button>
             </div>
           </form>
-
-          <hr className="my-4" />
-
-          {/* Lien pour s'inscrire */}
-          <p className="text-center">
-            Pas encore de compte ?{" "}
-            <a href="/signup" className="text-decoration-none text-primary">
-              Inscrivez-vous ici
-            </a>
-          </p>
         </div>
       </div>
     </div>
