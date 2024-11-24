@@ -10,36 +10,36 @@ const Login: React.FC<LoginProps> = ({ setRole }) => {
   const [username, setUsername] = useState(""); // État pour le nom d'utilisateur
   const [password, setPassword] = useState(""); // État pour le mot de passe
   const [error, setError] = useState<string | null>(null); // État pour les erreurs
+  const [isLoading, setIsLoading] = useState(false); // État pour le chargement
 
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setError(null); // Réinitialiser les erreurs
+    setIsLoading(true); // Activer l'état de chargement
 
     try {
-      const user = await login(username, password); // Appelle la fonction `login`
-      console.log("Utilisateur connecté :", user);
+      const user = await login(username, password); // Appelle la fonction `login` depuis authService.ts
 
-      if (user) {
-        localStorage.setItem("userRole", user.role); // Stocke le rôle dans localStorage
-        setRole(user.role); // Met à jour le rôle dans l'état parent
-        console.log("Rôle défini :", user.role);
+      // Stocker les informations utilisateur (token et rôle)
+      localStorage.setItem("token", user.token); // Stocke le token de session
+      localStorage.setItem("userRole", user.role); // Stocke le rôle dans localStorage
 
-        // Navigation avec React Router selon le rôle
-        if (user.role === "business") {
-          navigate("/business-dashboard");
-        } else if (user.role === "residential") {
-          navigate("/residential-dashboard");
-        } else if (user.role === "admin") {
-          navigate("/admin-dashboard");
-        }
-      } else {
-        setError("Nom d'utilisateur ou mot de passe incorrect.");
+      setRole(user.role); // Met à jour le rôle dans l'état parent
+
+      // Navigation selon le rôle
+      if (user.role === "business") {
+        navigate("/business-dashboard");
+      } else if (user.role === "residential") {
+        navigate("/residential-dashboard");
+      } else if (user.role === "admin") {
+        navigate("/admin-dashboard");
       }
-    } catch (error) {
-      console.error("Erreur lors de la connexion :", error);
-      setError("Une erreur s'est produite. Veuillez réessayer.");
+    } catch (error: any) {
+      setError(error.message); // Affiche le message d'erreur
+    } finally {
+      setIsLoading(false); // Désactiver l'état de chargement
     }
   };
 
@@ -77,14 +77,15 @@ const Login: React.FC<LoginProps> = ({ setRole }) => {
                 required
               />
             </div>
-            {error && <div className="text-danger">{error}</div>}
+            {error && <div className="text-danger mb-3">{error}</div>}
             <div className="d-grid">
               <button
                 type="submit"
                 className="btn"
                 style={{ backgroundColor: "#6a0dad", color: "white", border: "none" }}
-                >
-                Se connecter
+                disabled={isLoading} // Désactive le bouton pendant le chargement
+              >
+                {isLoading ? "Connexion en cours..." : "Se connecter"}
               </button>
             </div>
           </form>
@@ -92,9 +93,13 @@ const Login: React.FC<LoginProps> = ({ setRole }) => {
           {/* Lien pour s'inscrire */}
           <p className="text-center">
             Pas encore de compte ?{" "}
-            <a href="/signup" className="text-decoration-none text-primary">
+            <span
+              className="text-primary text-decoration-underline"
+              style={{ cursor: "pointer" }}
+              onClick={() => navigate("/signup")}
+            >
               Inscrivez-vous ici
-            </a>
+            </span>
           </p>
         </div>
       </div>

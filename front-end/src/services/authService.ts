@@ -1,38 +1,58 @@
-// authService.ts
-type User = {
-    username: string;
-    role: string;
-  };
-  
-  // Simuler un backend avec des utilisateurs fictifs
-  const mockUsers: User[] = [
-    { username: "admin", role: "admin" },
-    { username: "residential", role: "residential" },
-    { username: "business", role: "business" },
-  ];
-  
-  // Simuler une requête d'authentification
-  export const login = async (username: string, password: string): Promise<User | null> => {
-    // Simuler un délai pour représenter une requête HTTP
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  
-    // Authentification fictive : vérifier le username
-    const user = mockUsers.find((u) => u.username === username);
-  
-    if (user && password === `${username}123`) {
-      // Mot de passe fictif 
-      return user;
+import axios from "axios";
+
+const API_BASE_URL = "http://127.0.0.1:8000/api/users";
+
+export const login = async (username: string, password: string) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE_URL}/login/`,
+      new URLSearchParams({
+        username, // Clé 'username' attendue par le back-end
+        password, // Clé 'password' attendue par le back-end
+      }).toString(),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded", // Spécifie le type de contenu
+        },
+      }
+    );
+
+    return response.data; // Renvoie les données utilisateur
+  } catch (error: any) {
+    if (error.response && error.response.data) {
+      throw new Error(error.response.data.error || "Erreur de connexion.");
     }
-    return null; // Échec de la connexion
+    throw new Error("Impossible de contacter le serveur.");
+  }
+};
+
+export const signup = async (username: string, password: string, role: string) => {
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:8000/api/users/register/",
+        new URLSearchParams({
+          username,
+          password,
+          role, // Le rôle est obligatoire
+        }).toString(),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded", // Format requis par Django
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      if (error.response && error.response.data) {
+        throw new Error(error.response.data.error || "Une erreur s'est produite.");
+      }
+      throw new Error("Impossible de contacter le serveur.");
+    }
   };
-  
-  // Simuler une fonction pour récupérer le rôle utilisateur depuis un token ou localStorage
-  export const getUserRole = (): string | null => {
-    return localStorage.getItem("userRole");
-  };
-  
-  // Simuler une fonction pour déconnecter l'utilisateur
-  export const logout = (): void => {
+
+  export const logout = () => {
+    localStorage.removeItem("token");
     localStorage.removeItem("userRole");
+    console.log("Déconnexion réussie, localStorage vidé.");
   };
   

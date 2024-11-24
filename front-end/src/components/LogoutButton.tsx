@@ -6,8 +6,8 @@ const LogoutButton: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logout(); // Supprime le rôle utilisateur
-    navigate("/"); // Redirige vers la page de co
+    logout(); // Supprime le rôle utilisateur du localStorage
+    navigate("/"); // Redirige vers la page de connexion
   };
 
   return (
