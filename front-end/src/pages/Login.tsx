@@ -16,18 +16,18 @@ const Login: React.FC<LoginProps> = ({ setRole }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null); // Réinitialiser les erreurs
-    setIsLoading(true); // Activer l'état de chargement
-
+    setError(null);
+    setIsLoading(true);
+  
     try {
-      const user = await login(username, password); // Appelle la fonction `login` depuis authService.ts
-
-      // Stocker les informations utilisateur (token et rôle)
-      localStorage.setItem("token", user.token); // Stocke le token de session
-      localStorage.setItem("userRole", user.role); // Stocke le rôle dans localStorage
-
-      setRole(user.role); // Met à jour le rôle dans l'état parent
-
+      const user = await login(username, password); // Appelle le service d'authentification
+  
+      // Stocke les informations utilisateur (token et rôle)
+      localStorage.setItem("username", username);
+      localStorage.setItem("token", user.token);
+      localStorage.setItem("userRole", user.role);
+      setRole(user.role);
+  
       // Navigation selon le rôle
       if (user.role === "business") {
         navigate("/business-dashboard");
@@ -37,11 +37,18 @@ const Login: React.FC<LoginProps> = ({ setRole }) => {
         navigate("/admin-dashboard");
       }
     } catch (error: any) {
-      setError(error.message); // Affiche le message d'erreur
+      if (error.message === "force_password_change") {
+        console.log("Redirection vers changement de mot de passe"); // Debug
+        navigate("/change-password", { state: { username } }); // Redirige
+      } else {
+        setError(error.message); // Gère les autres erreurs
+      }
     } finally {
-      setIsLoading(false); // Désactiver l'état de chargement
+      setIsLoading(false);
     }
   };
+  
+  
 
   return (
     <div className="d-flex align-items-center justify-content-center vh-100 bg-light">
