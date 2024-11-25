@@ -33,6 +33,8 @@ class User(AbstractBaseUser):
     is_active = models.BooleanField(default=True)  # Utilisateur actif ou non
     is_staff = models.BooleanField(default=False)  # Accès à l'interface admin
     is_superuser = models.BooleanField(default=False)  # Super-utilisateur
+    failed_login_attempts = models.IntegerField(default=0)  # Tentatives échouées
+    force_password_change = models.BooleanField(default=False)
 
     objects = CustomUserManager()
 
@@ -64,3 +66,18 @@ class Session(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.token} - Expires: {self.expiration_time}"
+
+class SecuritySettings(models.Model):
+    password_complexity = models.CharField(
+        max_length=50, 
+        choices=[("low", "Low"), ("medium", "Medium"), ("high", "High")], 
+        default="medium"
+    )
+    session_duration = models.IntegerField(default=60)  # En minutes
+    max_login_attempts = models.IntegerField(default=5)
+    lockout_duration = models.IntegerField(default=15)  # En minutes
+    force_password_change = models.BooleanField(default=False)  # Forcer le changement de mot de passe
+
+    def __str__(self):
+        return f"Security Settings (Password Complexity: {self.password_complexity})"
+
