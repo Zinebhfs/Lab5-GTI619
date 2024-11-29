@@ -85,6 +85,7 @@ class RegisterView(View):
             return JsonResponse({"error": f"Une erreur est survenue : {str(e)}"}, status=500)
 
 
+from django.utils.timezone import now, timedelta
 
 def login_view(request):
     if request.method == 'POST':
@@ -153,3 +154,22 @@ class UsersByRoleView(View):
             return JsonResponse({"users": list(users)}, status=200)
         except Exception as e:
             return JsonResponse({"error": f"Une erreur est survenue : {str(e)}"}, status=500)
+
+class VerifyTokenView(View):
+    def post(self, request):
+        token = request.POST.get("token")
+
+        if not token:
+            return JsonResponse({"error": "Token requis."}, status=400)
+
+        try:
+            # Vérifie si le token est valide et non expiré
+            session = Session.objects.get(token=token, expiration_time__gte=now())
+            user = session.user
+            return JsonResponse({
+                "valid": True,
+                "username": user.username,
+                "role": user.role.name,
+            })
+        except Session.DoesNotExist:
+            return JsonResponse({"valid": False, "error": "Token invalide ou expiré."}, status=401)
