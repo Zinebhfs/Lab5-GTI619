@@ -6,6 +6,10 @@ const LogoutButton: React.FC = () => {
 
   const handleLogout = () => {
     logout(); // Déclenche la déconnexion
+    localStorage.removeItem("username");
+    localStorage.removeItem("token");
+    localStorage.removeItem("userRole");
+    
   };
 
   return (

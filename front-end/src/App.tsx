@@ -49,7 +49,6 @@ const RoutesWrapper = () => {
           {/* Redirige les utilisateurs authentifiés accédant aux pages publiques */}
           <Route path="/" element={<Navigate to={getDashboardRoute(userRole)} replace />} />
           <Route path="/signup" element={<Navigate to={getDashboardRoute(userRole)} replace />} />
-          <Route path="/change-password" element={<Navigate to={getDashboardRoute(userRole)} replace />} />
 
           {/* Pages protégées */}
           <Route
@@ -76,6 +75,15 @@ const RoutesWrapper = () => {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/change-password"
+            element={
+              <ProtectedRoute allowedRoles={["residential", "business", "admin"]}>
+                <ChangePassword />
+              </ProtectedRoute>
+            }
+          />
+
 
           {/* Redirection par défaut pour les utilisateurs authentifiés */}
           <Route path="*" element={<Navigate to={getDashboardRoute(userRole)} replace />} />

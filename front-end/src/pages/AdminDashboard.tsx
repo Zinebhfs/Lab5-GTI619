@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import LogoutButton from "../components/LogoutButton";
 import { getUsersByRole, getSecuritySettings, updateSecuritySettings, SecuritySettings } from "../services/authService";
+import { useNavigate } from "react-router-dom";
 
 type User = {
   username: string; // Typage pour les utilisateurs
@@ -11,6 +12,9 @@ const AdminDashboard: React.FC = () => {
   const [businessUsers, setBusinessUsers] = useState<User[]>([]); // Liste des clients business
   const [settings, setSettings] = useState<SecuritySettings | null>(null); // Paramètres de sécurité
   const [error, setError] = useState<string | null>(null); // Gestion des erreurs
+
+  const navigate = useNavigate();
+  const username = localStorage.getItem("username");
 
   // Récupérer les utilisateurs par rôle et les paramètres de sécurité
   useEffect(() => {
@@ -52,13 +56,27 @@ const AdminDashboard: React.FC = () => {
     setSettings({ ...settings, [field]: value });
   };
 
+  const handleChangePassword = () => {
+    if (username) {
+      console.log("Navigating to change-password page with username:", username);
+      navigate("/change-password", { state: { username } });
+    } else {
+      console.error("Username is null. Cannot navigate to change-password.");
+    }
+  };
+
   return (
     <div className="container">
       {/* Barre supérieure */}
       <div className="d-flex justify-content-between align-items-center py-3">
         <h1>Tableau de bord Administrateurs</h1>
-        <LogoutButton />
-      </div>
+        <div>
+            <button className="btn btn-secondary me-2" onClick={handleChangePassword}>
+            Changer mon mot de passe
+            </button>
+            <LogoutButton />
+        </div>
+        </div>
 
       {/* Gestion des erreurs */}
       {error && <div className="text-danger">{error}</div>}

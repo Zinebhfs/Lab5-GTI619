@@ -123,13 +123,39 @@ export const signup = async (username: string, password: string, role: string) =
   };
   
 // Fonction pour changer le mot de passe
-export const changePassword = async (username: string, newPassword: string) => {
-    const response = await axios.post("http://127.0.0.1:8000/api/users/change-password/", {
+export const changePassword = async (
+    username: string,
+    currentPassword: string,
+    newPassword: string
+  ) => {
+    const token = localStorage.getItem("token"); // Récupérer le token depuis localStorage
+  
+    if (!token) {
+      throw new Error("Vous devez être connecté pour changer le mot de passe.");
+    }
+  
+    // Construire les données à envoyer
+    const requestData = new URLSearchParams({
       username,
+      current_password: currentPassword, // Nouveau champ pour le mot de passe actuel
       new_password: newPassword,
-    });
+    }).toString();
+  
+    const response = await axios.post(
+      "http://127.0.0.1:8000/api/users/change-password/",
+      requestData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`, // Ajout du token dans le header
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      }
+    );
+  
     return response.data; // Retourne les données de l'API
   };
+  
+  
 
   export const verifyToken = async (token: string) => {
     try {

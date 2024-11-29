@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
-import { verifyToken } from "../services/authService";
+import React, { createContext, useContext, useState, useEffect } from "react";
 
 type AuthContextType = {
   isAuthenticated: boolean;
@@ -24,38 +23,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const token = localStorage.getItem("token");
+    const role = localStorage.getItem("userRole");
+    const storedUsername = localStorage.getItem("username");
 
-    if (token) {
-      verifyToken(token)
-        .then((data) => {
-          if (data.valid) {
-            setIsAuthenticated(true);
-            setUserRole(data.role);
-            setUsername(data.username);
-          } else {
-            logout();
-          }
-        })
-        .catch(() => {
-          logout();
-        });
+    if (token && role && storedUsername) {
+      setIsAuthenticated(true);
+      setUserRole(role);
+      setUsername(storedUsername);
     }
   }, []);
 
   const login = (token: string, role: string, username: string) => {
     localStorage.setItem("token", token);
+    localStorage.setItem("userRole", role);
+    localStorage.setItem("username", username);
     setIsAuthenticated(true);
     setUserRole(role);
     setUsername(username);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("tokenExpiration");
+    localStorage.clear();
     setIsAuthenticated(false);
     setUserRole(null);
     setUsername(null);
-    window.location.href = "/"; // Force une redirection complète
   };
 
   return (

@@ -1,17 +1,27 @@
-import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { changePassword } from "../services/authService";
 
 const ChangePassword: React.FC = () => {
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [currentPassword, setCurrentPassword] = useState(""); // État pour le mot de passe actuel
+  const [newPassword, setNewPassword] = useState(""); // État pour le nouveau mot de passe
+  const [confirmPassword, setConfirmPassword] = useState(""); // État pour confirmer le mot de passe
+  const [error, setError] = useState<string | null>(null); // État pour afficher les erreurs
+  const [success, setSuccess] = useState<string | null>(null); // État pour afficher les succès
 
-  const location = useLocation();
   const navigate = useNavigate();
+  const [username, setUsername] = useState<string | null>(null);
 
-  const username = location.state?.username; // Récupère le nom d'utilisateur depuis la navigation
+  useEffect(() => {
+    // Récupérer le `username` depuis le stockage local
+    const storedUsername = localStorage.getItem("username");
+    if (storedUsername) {
+      setUsername(storedUsername);
+    } else {
+      // Redirige l'utilisateur si aucun nom d'utilisateur n'est disponible
+      navigate("/");
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,9 +34,11 @@ const ChangePassword: React.FC = () => {
     }
 
     try {
+      if (!username) throw new Error("Utilisateur non identifié.");
+
       // Appelle le service pour changer le mot de passe
-      await changePassword(username, newPassword);
-      setSuccess("Mot de passe changé avec succès. Vous allez être redirigé vers la connexion.");
+      await changePassword(username, currentPassword, newPassword); // Ajout de `currentPassword`
+      setSuccess("Mot de passe changé avec succès.");
       setTimeout(() => navigate("/"), 3000); // Redirige vers la page de connexion après 3 secondes
     } catch (error: any) {
       setError(error.response?.data?.error || "Une erreur s'est produite.");
@@ -41,6 +53,23 @@ const ChangePassword: React.FC = () => {
           {error && <div className="alert alert-danger">{error}</div>}
           {success && <div className="alert alert-success">{success}</div>}
           <form onSubmit={handleSubmit}>
+            {/* Champ pour le mot de passe actuel */}
+            <div className="mb-3">
+              <label htmlFor="currentPassword" className="form-label">
+                Mot de passe actuel
+              </label>
+              <input
+                type="password"
+                id="currentPassword"
+                className="form-control"
+                placeholder="Entrez votre mot de passe actuel"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            {/* Champ pour le nouveau mot de passe */}
             <div className="mb-3">
               <label htmlFor="newPassword" className="form-label">
                 Nouveau mot de passe
@@ -55,6 +84,8 @@ const ChangePassword: React.FC = () => {
                 required
               />
             </div>
+
+            {/* Champ pour confirmer le nouveau mot de passe */}
             <div className="mb-3">
               <label htmlFor="confirmPassword" className="form-label">
                 Confirmez le mot de passe
@@ -69,6 +100,8 @@ const ChangePassword: React.FC = () => {
                 required
               />
             </div>
+
+            {/* Bouton de soumission */}
             <button type="submit" className="btn btn-primary w-100">
               Changer le mot de passe
             </button>
