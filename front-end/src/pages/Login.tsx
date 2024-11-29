@@ -1,33 +1,28 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../services/authService";
+import { useAuth } from "../contexts/AuthContext";
 
-type LoginProps = {
-  setRole: (role: string) => void;
-};
-
-const Login: React.FC<LoginProps> = ({ setRole }) => {
+const Login: React.FC = () => {
   const [username, setUsername] = useState(""); // État pour le nom d'utilisateur
   const [password, setPassword] = useState(""); // État pour le mot de passe
   const [error, setError] = useState<string | null>(null); // État pour les erreurs
   const [isLoading, setIsLoading] = useState(false); // État pour le chargement
 
+  const { login: loginContext } = useAuth(); // Utilise le contexte pour gérer l'authentification
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setIsLoading(true);
-  
+
     try {
       const user = await login(username, password); // Appelle le service d'authentification
-  
-      // Stocke les informations utilisateur (token et rôle)
-      localStorage.setItem("username", username);
-      localStorage.setItem("token", user.token);
-      localStorage.setItem("userRole", user.role);
-      setRole(user.role);
-  
+
+      // Stocke les informations utilisateur (token et rôle) dans le contexte
+      loginContext(user.token, user.role, username);
+
       // Navigation selon le rôle
       if (user.role === "business") {
         navigate("/business-dashboard");
@@ -38,17 +33,14 @@ const Login: React.FC<LoginProps> = ({ setRole }) => {
       }
     } catch (error: any) {
       if (error.message === "force_password_change") {
-        console.log("Redirection vers changement de mot de passe"); // Debug
-        navigate("/change-password", { state: { username } }); // Redirige
+        navigate("/change-password", { state: { username } }); // Redirige si le changement de mot de passe est requis
       } else {
-        setError(error.message); // Gère les autres erreurs
+        setError(error.message); // Affiche les autres erreurs
       }
     } finally {
       setIsLoading(false);
     }
   };
-  
-  
 
   return (
     <div className="d-flex align-items-center justify-content-center vh-100 bg-light">

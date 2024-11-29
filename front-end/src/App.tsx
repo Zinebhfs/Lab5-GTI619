@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { BrowserRouter as Router, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import ResidentialDashboard from "./pages/ResidentialDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -7,77 +6,84 @@ import BusinessDashboard from "./pages/BusinessDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Signup from "./pages/Signup";
 import ChangePassword from "./pages/ChangePassword";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 const App = () => {
-  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
-
   return (
-    <Router>
-      <RoutesWrapper setCurrentUserRole={setCurrentUserRole} currentUserRole={currentUserRole} />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <RoutesWrapper />
+      </Router>
+    </AuthProvider>
   );
 };
 
-const RoutesWrapper = ({
-  setCurrentUserRole,
-  currentUserRole,
-}: {
-  setCurrentUserRole: React.Dispatch<React.SetStateAction<string | null>>;
-  currentUserRole: string | null;
-}) => {
-  const navigate = useNavigate();
+const RoutesWrapper = () => {
+  const { isAuthenticated, userRole } = useAuth();
 
-  useEffect(() => {
-    const storedRole = localStorage.getItem("userRole");
-    const tokenExpiration = localStorage.getItem("tokenExpiration");
-
-    if (storedRole) {
-      setCurrentUserRole(storedRole);
+  // Détermine le tableau de bord en fonction du rôle utilisateur
+  const getDashboardRoute = (role: string | null) => {
+    switch (role) {
+      case "residential":
+        return "/residential-dashboard";
+      case "business":
+        return "/business-dashboard";
+      case "admin":
+        return "/admin-dashboard";
+      default:
+        return "/";
     }
-
-    // Vérifie si la session est expirée
-    if (tokenExpiration && new Date(tokenExpiration) < new Date()) {
-      localStorage.clear(); // Supprime toutes les données
-      alert("Votre session a expiré. Veuillez vous reconnecter.");
-      navigate("/"); // Redirige vers la page de connexion
-    }
-  }, [setCurrentUserRole, navigate]);
+  };
 
   return (
     <Routes>
-      {/* Page de connexion */}
-      <Route path="/" element={<Login setRole={setCurrentUserRole} />} />
-      {/* Page d'inscription */}
-      <Route path="/signup" element={<Signup />} />
-      {/* Page de changement de mot de passe */}
-      <Route path="/change-password" element={<ChangePassword />} />
-      {/* Dashboard résidentiel */}
-      <Route
-        path="/residential-dashboard"
-        element={
-          <ProtectedRoute userRole={currentUserRole} allowedRoles={["residential"]}>
-            <ResidentialDashboard />
-          </ProtectedRoute>
-        }
-      />
-      {/* Dashboard business */}
-      <Route
-        path="/business-dashboard"
-        element={
-          <ProtectedRoute userRole={currentUserRole} allowedRoles={["business"]}>
-            <BusinessDashboard />
-          </ProtectedRoute>
-        }
-      />
-      {/* Dashboard admin */}
-      <Route
-        path="/admin-dashboard"
-        element={
-          <ProtectedRoute userRole={currentUserRole} allowedRoles={["admin"]}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        }
-      />
+      {/* Pages publiques */}
+      {!isAuthenticated ? (
+        <>
+          <Route path="/" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/change-password" element={<ChangePassword />} />
+        </>
+      ) : (
+        <>
+          {/* Redirige les utilisateurs authentifiés accédant aux pages publiques */}
+          <Route path="/" element={<Navigate to={getDashboardRoute(userRole)} replace />} />
+          <Route path="/signup" element={<Navigate to={getDashboardRoute(userRole)} replace />} />
+          <Route path="/change-password" element={<Navigate to={getDashboardRoute(userRole)} replace />} />
+
+          {/* Pages protégées */}
+          <Route
+            path="/residential-dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["residential"]}>
+                <ResidentialDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/business-dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["business"]}>
+                <BusinessDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin-dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Redirection par défaut pour les utilisateurs authentifiés */}
+          <Route path="*" element={<Navigate to={getDashboardRoute(userRole)} replace />} />
+        </>
+      )}
+
+      {/* Gestion des routes non trouvées */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

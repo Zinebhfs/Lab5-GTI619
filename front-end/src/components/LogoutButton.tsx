@@ -1,13 +1,11 @@
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { logout } from "../services/authService";
+import { useAuth } from "../contexts/AuthContext";
 
 const LogoutButton: React.FC = () => {
-  const navigate = useNavigate();
+  const { logout } = useAuth();
 
   const handleLogout = () => {
-    logout(); // Supprime le rôle utilisateur du localStorage
-    navigate("/"); // Redirige vers la page de connexion
+    logout(); // Déclenche la déconnexion
   };
 
   return (

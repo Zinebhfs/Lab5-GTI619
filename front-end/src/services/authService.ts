@@ -130,3 +130,21 @@ export const changePassword = async (username: string, newPassword: string) => {
     });
     return response.data; // Retourne les données de l'API
   };
+
+  export const verifyToken = async (token: string) => {
+    try {
+      const response = await axios.post(
+        `${API_BASE_URL}/verify-token/`,
+        new URLSearchParams({ token }).toString(),
+        {
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+        }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || "Échec de la vérification du token.");
+    }
+  };
+  
