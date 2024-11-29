@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
 from django.utils.timezone import now
+from django.contrib.auth.hashers import check_password
 
 # Manager pour le modèle utilisateur personnalisé
 class CustomUserManager(BaseUserManager):
@@ -40,6 +41,21 @@ class User(AbstractBaseUser):
 
     USERNAME_FIELD = 'username'
     REQUIRED_FIELDS = []
+
+    def add_to_password_history(self, hashed_password):
+        PasswordHistory.objects.create(user=self, password_hash=hashed_password)
+
+    def has_perm(self, perm, obj=None):
+        """
+        Vérifie si l'utilisateur a une permission spécifique.
+        """
+        return self.is_superuser or super().has_perm(perm, obj)
+
+    def has_module_perms(self, app_label):
+        """
+        Vérifie si l'utilisateur a des permissions sur un module.
+        """
+        return self.is_superuser or True  # Remplacez par une logique personnalisée si nécessaire
 
     def __str__(self):
         return self.username
@@ -81,3 +97,20 @@ class SecuritySettings(models.Model):
     def __str__(self):
         return f"Security Settings (Password Complexity: {self.password_complexity})"
 
+class PasswordHistory(models.Model):
+    user = models.ForeignKey('User', on_delete=models.CASCADE, related_name='password_history')
+    password_hash = models.CharField(max_length=128)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def is_reused(self, new_password):
+        return check_password(new_password, self.password_hash)
+
+class AuditLog(models.Model):
+    user = models.ForeignKey('User', on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=255)  # Exemple : "Login", "Change Password"
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)  # Adresse IP
+    details = models.TextField(blank=True)  # Informations supplémentaires
+
+    def __str__(self):
+        return f"{self.user.username if self.user else 'Unknown User'} - {self.action} at {self.timestamp}"
