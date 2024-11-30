@@ -176,6 +176,7 @@ const AdminDashboard: React.FC = () => {
           </button>
         </form>
       )}
+      <h1></h1>
     </div>
   );
 };

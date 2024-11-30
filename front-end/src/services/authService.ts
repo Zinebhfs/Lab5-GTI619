@@ -137,7 +137,7 @@ export const changePassword = async (
     // Construire les données à envoyer
     const requestData = new URLSearchParams({
       username,
-      current_password: currentPassword, // Nouveau champ pour le mot de passe actuel
+      current_password: currentPassword, // mot de passe actuel
       new_password: newPassword,
     }).toString();
   
