@@ -36,6 +36,7 @@ class User(AbstractBaseUser):
     is_superuser = models.BooleanField(default=False)  # Super-utilisateur
     failed_login_attempts = models.IntegerField(default=0)  # Tentatives échouées
     force_password_change = models.BooleanField(default=False)
+    lock_until = models.DateTimeField(null=True, blank=True) 
 
     objects = CustomUserManager()
 

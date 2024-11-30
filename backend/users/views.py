@@ -5,7 +5,7 @@ from django.utils.timezone import now, timedelta
 from .models import User, Role, Session, PasswordHistory
 import uuid
 from .models import SecuritySettings
-from .utils import log_event
+from .utils import log_event, is_password_valid
 
 class SecuritySettingsView(View):
     def get(self, request):
@@ -103,10 +103,40 @@ def login_view(request):
             log_event(None, "Failed Login", ip_address, f"Invalid username: {username}")
             return JsonResponse({"error": "Nom d'utilisateur ou mot de passe incorrect"}, status=401)
 
+        # Récupère les paramètres de sécurité
+        settings = SecuritySettings.objects.first()
+        if not settings:
+            return JsonResponse({"error": "Paramètres de sécurité non configurés."}, status=500)
+
+        max_login_attempts = settings.max_login_attempts
+        lockout_duration = settings.lockout_duration
+        session_duration = settings.session_duration
+
+        # Vérifie si l'utilisateur est verrouillé
+        if user.failed_login_attempts >= max_login_attempts:
+            lockout_time = user.lock_until  # Champ personnalisé pour gérer le verrouillage
+            if lockout_time and now() < lockout_time:
+                return JsonResponse({"error": "Compte verrouillé. Réessayez après quelques minutes."}, status=403)
+
+        # Vérifie le mot de passe
         if user.check_password(password):
-            token = str(uuid.uuid4())  # Génère un token
-            expiration_time = now() + timedelta(hours=1)
+            # Vérifie si un changement de mot de passe est requis
+            if user.force_password_change:
+                return JsonResponse({
+                    "error": "Vous devez changer votre mot de passe avant de continuer.",
+                    "force_password_change": True
+                }, status=403)
+
+            # Réinitialise les tentatives échouées et supprime le verrouillage
+            user.failed_login_attempts = 0
+            user.lock_until = None
+            user.last_login = now()
+            user.save()
+
+            token = str(uuid.uuid4())  # Génère un token unique
+            expiration_time = now() + timedelta(minutes=session_duration)
             Session.objects.create(user=user, token=token, expiration_time=expiration_time)
+
             log_event(user, "Login", ip_address, "Connexion réussie")
             return JsonResponse({
                 "message": "Connexion réussie",
@@ -114,6 +144,13 @@ def login_view(request):
                 "token": token,
                 "username": user.username
             }, status=200)
+
+        # Incrémente les tentatives échouées
+        user.failed_login_attempts += 1
+        if user.failed_login_attempts >= max_login_attempts:
+            user.lock_until = now() + timedelta(minutes=lockout_duration)
+            log_event(user, "Account Locked", ip_address, "Compte verrouillé après trop de tentatives")
+        user.save()
 
         log_event(user, "Failed Login", ip_address, "Mot de passe incorrect")
         return JsonResponse({"error": "Nom d'utilisateur ou mot de passe incorrect"}, status=401)
@@ -135,21 +172,24 @@ class ChangePasswordView(View):
         username = request.POST.get("username")
         current_password = request.POST.get("current_password")
         new_password = request.POST.get("new_password")
-        ip_address = get_client_ip(request)
+        ip_address = get_client_ip(request)  # Récupère l'adresse IP du client
 
         if not username or not current_password or not new_password:
             return JsonResponse({"error": "Tous les champs sont requis."}, status=400)
 
         if check_password(new_password, current_password):
+            log_event(None, "Failed Password Change", ip_address, "Tentative de réutilisation du mot de passe actuel")
             return JsonResponse({"error": "Vous ne pouvez pas réutiliser un mot de passe précédent."}, status=400)
-
+            
         try:
             user = User.objects.get(username=username)
 
+            # Vérifie le mot de passe actuel
             if not user.check_password(current_password):
                 log_event(user, "Failed Password Change", ip_address, "Mot de passe actuel incorrect")
                 return JsonResponse({"error": "Mot de passe actuel incorrect."}, status=400)
 
+            # Vérifie l'historique des mots de passe
             if PasswordHistory.objects.filter(user=user).exists():
                 for old_password in PasswordHistory.objects.filter(user=user):
                     if old_password.is_reused(new_password):
@@ -159,8 +199,13 @@ class ChangePasswordView(View):
                             status=400
                         )
 
+            # Hache le nouveau mot de passe
+            hashed_new_password = make_password(new_password)
+
+            # Met à jour le mot de passe
             user.set_password(new_password)
-            user.add_to_password_history(new_password)
+            user.add_to_password_history(hashed_new_password)
+            user.failed_login_attempts = 0
             user.save()
 
             log_event(user, "Password Change", ip_address, "Mot de passe modifié avec succès")
